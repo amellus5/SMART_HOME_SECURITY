@@ -17,22 +17,50 @@ from backend.app.services.event_service import save_detection_event
 # ==========================================
 
 CAMERA_INDEX = 0
+CAMERA_ID = 5
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 
 FACE_DIR = PROJECT_ROOT / "storage" / "faces"
-
 SNAPSHOT_DIR = PROJECT_ROOT / "storage" / "snapshots"
-
-DATABASE_PATH = (
-    PROJECT_ROOT / "storage" / "database" / "smart_home.db"
-)
+DATABASE_PATH = PROJECT_ROOT / "storage" / "database" / "smart_home.db"
 
 SIMILARITY_THRESHOLD = 0.45
-
 EVENT_COOLDOWN = 30
 
 WINDOW_NAME = "SMART HOME SECURITY - AI EVENT LOGGING"
+
+
+# ==========================================
+# CAP NHAT TRANG THAI CAMERA
+# ==========================================
+
+def set_camera_status(status):
+
+    connection = sqlite3.connect(DATABASE_PATH)
+
+    try:
+
+        cursor = connection.execute("""
+            UPDATE cameras
+            SET status = ?
+            WHERE id = ?
+        """, (status, CAMERA_ID))
+
+        if cursor.rowcount == 0:
+            raise ValueError(
+                f"Khong tim thay camera ID {CAMERA_ID}"
+            )
+
+        connection.commit()
+
+        print(
+            f"Trang thai Webcam Laptop: {status.upper()}"
+        )
+
+    finally:
+
+        connection.close()
 
 
 # ==========================================
@@ -186,7 +214,7 @@ def log_detection_event(
         person_name=person_name,
         similarity=similarity,
         snapshot_path=snapshot_path,
-        camera_id=None,
+        camera_id=CAMERA_ID,
         member_id=member_id
     )
 
@@ -203,6 +231,18 @@ def main():
     print(" SMART HOME SECURITY")
     print(" AI FACE RECOGNITION + EVENT LOG")
     print("===================================")
+
+    try:
+
+        # Tranh giu trang thai online cu neu lan chay truoc
+        # bi tat dot ngot.
+
+        set_camera_status("offline")
+
+    except Exception as error:
+
+        print("LOI KIEM TRA CAMERA:", error)
+        return
 
     database = load_registered_faces()
 
@@ -241,9 +281,23 @@ def main():
     if not cap.isOpened():
 
         print("KHONG THE MO CAMERA LAPTOP!")
+
+        cap.release()
+        return
+
+    try:
+
+        set_camera_status("online")
+
+    except Exception as error:
+
+        print("LOI CAP NHAT TRANG THAI CAMERA:", error)
+
+        cap.release()
         return
 
     print("\nHE THONG DA SAN SANG!")
+    print("Camera ID:", CAMERA_ID)
     print("Nhan Q hoac ESC de thoat.")
 
     last_event_times = {}
@@ -303,9 +357,6 @@ def main():
                     2
                 )
 
-                # Moi nguoi quen co mot khoa rieng.
-                # Nguoi chua nhan dien dung chung khoa UNKNOWN.
-
                 event_key = (
                     name if event_type == "KNOWN"
                     else "UNKNOWN"
@@ -334,7 +385,8 @@ def main():
 
                         print(
                             f"Da ghi nhan su kien #{event_id}: "
-                            f"{event_type} - {name}"
+                            f"{event_type} - {name} "
+                            f"(Camera ID: {CAMERA_ID})"
                         )
 
                     except Exception as error:
@@ -369,6 +421,17 @@ def main():
 
         cap.release()
         cv2.destroyAllWindows()
+
+        try:
+
+            set_camera_status("offline")
+
+        except Exception as error:
+
+            print(
+                "LOI CAP NHAT TRANG THAI CAMERA:",
+                error
+            )
 
         print("\nDA DUNG HE THONG!")
 
