@@ -1,0 +1,46 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.pytest_cache/
+.mypy_cache/
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# AI models
+models/
+*.onnx
+*.pth
+*.pt
+
+# Private face data and camera snapshots
+storage/faces/*
+!storage/faces/.gitkeep
+storage/snapshots/*
+!storage/snapshots/.gitkeep
+storage/database/*
+!storage/database/.gitkeep
+
+# Logs
+*.log
+
+# IDE
+.vscode/
+.idea/
+
+# Operating system
+.DS_Store
+Thumbs.db
