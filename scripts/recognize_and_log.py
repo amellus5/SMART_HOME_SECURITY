@@ -1,4 +1,4 @@
-
+﻿
 import cv2
 import json
 import sqlite3
@@ -10,6 +10,7 @@ from datetime import datetime
 from insightface.app import FaceAnalysis
 
 from backend.app.services.event_service import save_detection_event
+from backend.app.services.notification_service import send_unknown_notification
 
 
 # ==========================================
@@ -71,14 +72,38 @@ def load_registered_faces():
 
     database = {}
 
-    for file_path in FACE_DIR.glob("*.json"):
+    connection = sqlite3.connect(DATABASE_PATH)
+
+    try:
+
+        rows = connection.execute("""
+            SELECT full_name, face_file
+            FROM family_members
+            WHERE is_active = 1
+        """).fetchall()
+
+    finally:
+
+        connection.close()
+
+    for full_name, face_file in rows:
 
         try:
+
+            file_path = FACE_DIR / Path(face_file).name
+
+            if not file_path.is_file():
+                print(f"KHONG TIM THAY FILE KHUON MAT: {full_name}")
+                continue
 
             with open(file_path, "r", encoding="utf-8") as file:
                 data = json.load(file)
 
             name = data["name"]
+
+            if name != full_name:
+                print(f"KHONG DONG BO TEN THANH VIEN: {full_name}")
+                continue
 
             embeddings = np.array(
                 data["embeddings"],
@@ -100,13 +125,11 @@ def load_registered_faces():
 
             print(f"Da nap khuon mat: {name}")
 
-        except (OSError, ValueError, KeyError) as error:
+        except (OSError, ValueError, KeyError, TypeError) as error:
 
-            print(f"Loi doc file {file_path.name}: {error}")
+            print(f"Loi doc file {full_name}: {error}")
 
     return database
-
-
 # ==========================================
 # DOC ID THANH VIEN TU SQLITE
 # ==========================================
@@ -389,10 +412,23 @@ def main():
                             f"(Camera ID: {CAMERA_ID})"
                         )
 
+                        # ==================================
+                        # GUI CANH BAO KHI PHAT HIEN UNKNOWN
+                        # ==================================
+
+                        if event_type == "UNKNOWN":
+
+                            send_unknown_notification(
+                                event_id=event_id,
+                                detected_at=datetime.now().strftime(
+                                    "%d/%m/%Y %H:%M:%S"
+                                )
+                            )
+
                     except Exception as error:
 
                         print(
-                            "LOI LUU SU KIEN:",
+                            "LOI XU LY SU KIEN:",
                             error
                         )
 
@@ -439,3 +475,4 @@ def main():
 if __name__ == "__main__":
 
     main()
+

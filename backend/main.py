@@ -10,8 +10,18 @@ from backend.app.api.event_routes import router as event_router
 from backend.app.api.camera_routes import router as camera_router
 
 
+# ========================================
+# DUONG DAN CAC THU MUC
+# ========================================
+
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 FRONTEND_DIR = PROJECT_ROOT / "frontend"
+STORAGE_DIR = PROJECT_ROOT / "storage"
+
+
+# ========================================
+# KHOI TAO FASTAPI
+# ========================================
 
 app = FastAPI(
     title="SMART HOME SECURITY API",
@@ -36,6 +46,21 @@ app.mount(
     name="js"
 )
 
+
+# ========================================
+# PHUC VU ANH VA DU LIEU STORAGE
+# ========================================
+
+app.mount(
+    "/storage",
+    StaticFiles(directory=STORAGE_DIR),
+    name="storage"
+)
+
+
+# ========================================
+# TRANG CHU
+# ========================================
 
 @app.get("/", include_in_schema=False)
 def home():
